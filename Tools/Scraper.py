@@ -3,7 +3,10 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import json     
 from typing import List, Dict
-from utils.model import Model    
+from Utils.Model import Model    
+import re
+import urllib3
+from urllib.parse import urljoin, urlparse
 import os 
 import logging
 from datetime import datetime
@@ -36,7 +39,41 @@ class Scrapy:
         self.scraped_page = []
         self.model = model
         
-    def dismantle_webpage(self,url,user_prompt):
+    def _extract_content(self,soup:BeautifulSoup):
+        for element in soup.select('header, footer, nav, script, style, [class*="menu"], [class*="sidebar"]'):
+            element.decompose()
+        
+        content = soup.find('main') or soup.find('article') or soup.find('div', class_=re.compile(r'content|main|article'))
+        
+        if content:
+            return content.get_text(separator=' ', strip=True)
+        return soup.get_text(separator=' ', strip=True)
+
+    def _is_valid_url(self,url:str):
+        try:
+            parsed = urlparse(url)
+            base_domain = urlparse(self.base_url).netloc.replace('wwww.','')
+            current_domain = parsed.netloc.replace('wwww.','')
+            
+            if base_domain != current_domain:
+                return False 
+
+            excluded_domains = [
+                'linkedin.com', 'facebook.com','x.com',
+                'instagram.com', 'youtube.com'
+            ]
+            
+            if any(domain in parsed.netloc.lower() for domain in excluded_domains):
+                logging.info("Removing socials links")
+                return False
+            
+            return True 
+        except Exception as e:
+            logging.info(f"Exception {e} has occured while validating url for base url {base_domain} and target {current_domain}")
+            return False
+        
+        
+    def dismantle_webpage(self,url:str,user_prompt:str=""):
         """
         user_prompt : Parameter for the user to specify the goal of the scraping the website / webpage
         """
@@ -46,21 +83,18 @@ class Scrapy:
             body = response.content
             soup = BeautifulSoup(body,'html.parser')
             title = soup.title.string if soup.title else "No title found"
-            if soup.body:
-                for irrelevant in soup.body(["script", "style", "img", "input"]):
-                    irrelevant.decompose()
-                text = soup.body.get_text(separator="\n", strip=True)
-            else:
-                text = ""
-            articles = [ articles for articles in soup.find_all('article')]
+            content = self._extract_content(soup)
             page_data = {
                 'title': title,
                 'url' : url,
-                'content': text,
-                'articles': articles
+                'content': content
             }
             self.scraped_page.append(page_data)
-            links = [link.get('href') for link in soup.find_all('a')]
+            links = []
+            for link in soup.find_all('a',href=True):
+                full_url = urljoin(url,link['href'])
+                if self._is_valid_url(full_url):
+                    links.append(full_url)
             if links:
                 links = self.sub_link_filter(links,user_prompt)
                 for link in links:
@@ -75,8 +109,10 @@ class Scrapy:
         while self.sub_sites:
             page = self.sub_sites.pop()
             self.dismantle_webpage(page,user_prompt)
+            
+            
     
-    def sub_link_filter(self,links:List[str],user_prompt):
+    def sub_link_filter(self,links:List[str],user_prompt:str=""):
         prompt = f"""From this list of links {links} and this {self.base_url} 
                     remove the links that you do not think will contain relevant data,
                     also remove the links of social media accounts.
