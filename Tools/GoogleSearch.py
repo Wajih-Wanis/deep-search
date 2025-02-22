@@ -15,10 +15,13 @@ class GoogleSearchAutomator:
             element.send_keys(char)
             time.sleep(random.uniform(0.05, 0.3))
 
-    def search_google(self, query, pages=1, delay=2):
+    def search_google(self, query, pages=1, delay=2,scholar=False):
         results = []
         try:
-            self.driver.get("https://www.google.com")
+            if scholar:
+                self.driver.get("https://scholar.google.com/")
+            else:
+                self.driver.get("https://www.google.com")
             # For the cookies 
             try:
                 WebDriverWait(self.driver, 5).until(
