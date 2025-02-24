@@ -16,8 +16,8 @@ class Model:
 
 class OllamaModel(Model):
     
-    def __init__(self,model="deepseek-r1:8b"):
-        self.model = OllamaLLM(model=model) 
+    def __init__(self,model="deepseek-r1:8b",temperature=0):
+        self.model = OllamaLLM(model=model,temperature=temperature) 
         
     
     def _run(self,input:str) -> str:
