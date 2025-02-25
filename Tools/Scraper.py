@@ -16,7 +16,7 @@ if not os.path.exists('logs'):
     os.makedirs('logs')
 
 current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_filename = os.path.join('logs', f"log_resume_reader_{current_time}.log")
+log_filename = os.path.join('logs', f"log_{current_time}.log")
 
 logging.basicConfig(
     level=logging.INFO,

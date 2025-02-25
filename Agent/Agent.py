@@ -8,7 +8,16 @@ from Utils.Model import Model
 from Tools.GoogleSearch import GoogleSearchAutomator
 from Tools.Scraper import Scrapy
 from Types.Types import Website
+import os 
+import logging
+from datetime import datetime
 
+
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+log_filename = os.path.join('logs', f"log_{current_time}.log")
 
 class OverallState(TypedDict):
     topic: str
@@ -20,7 +29,8 @@ class OverallState(TypedDict):
 class SearchState(TypedDict):
     query: str
 
-queries_prompt = """Generate {num_queries} different search queries to thoroughly research this topic: {topic}. 
+queries_prompt = """Generate {num_queries} different search queries to thoroughly research this topic: {topic}.
+The queries generated must be google searchable. 
 Return your response in this exact JSON format:
 {{
     "queries": ["query1", "query2", "query3"]
@@ -60,13 +70,12 @@ def parse_json_response(response: str) -> Dict[str, Any]:
         json_str = response[start_idx:end_idx]
         return json.loads(json_str)
     except Exception as e:
-        print(f"Error parsing JSON response: {str(e)}")
+        logging.info(f"Agent.py: Error parsing JSON response: {str(e)}")
         return {"error": "Failed to parse response"}
 
 class DeepSearchAgent:
     def __init__(self, model:Model):
         self.model = model
-        self.search_tool = GoogleSearchAutomator(headless=True)
         
     def generate_search_queries(self, state: OverallState, num_queries: int = 3):
         prompt = queries_prompt.format(topic=state["topic"], num_queries=num_queries)
@@ -75,7 +84,8 @@ class DeepSearchAgent:
         return {"search_queries": parsed.get("queries", [])}
 
     def execute_search(self, state: SearchState):
-        results = self.search_tool.search_google(state["query"], pages=2)
+        search_tool = GoogleSearchAutomator()
+        results = search_tool.search_google(state["query"], pages=2)
         websites = [
             Website(url=result["link"], title=result["title"], content=None) 
             for result in results

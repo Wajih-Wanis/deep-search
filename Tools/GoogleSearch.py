@@ -4,6 +4,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import random
+import os 
+import logging
+from datetime import datetime
+
+
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+log_filename = os.path.join('logs', f"log_{current_time}.log")
 
 class GoogleSearchAutomator:
     def __init__(self, headless=False):
@@ -20,22 +30,26 @@ class GoogleSearchAutomator:
         try:
             if scholar:
                 self.driver.get("https://scholar.google.com/")
+                logging.info("Google scholar search instance made")
             else:
                 self.driver.get("https://www.google.com")
+                logging.info("Google search instance made")
             # For the cookies 
             try:
                 WebDriverWait(self.driver, 5).until(
                     EC.element_to_be_clickable((By.ID, "L2AGLb"))
                 ).click()
+                logging.info("Cookies popped and passed")
             except:
                 pass
 
             search_box = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, '//*[@id="APjFqb"]'))
             )
+            logging.info("Search box found")
             self.human_type(search_box, query)
             search_box.submit()
-            
+            logging.info(f"Search submitted for query {query}")
             for _ in range(pages):
                 time.sleep(delay + random.uniform(-0.5, 0.5))
                 
@@ -52,16 +66,19 @@ class GoogleSearchAutomator:
                     next_btn = self.driver.find_element(
                         By.CSS_SELECTOR, "#pnnext")
                     next_btn.click()
+                    WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "div.g"))
+                    )
                 except:
                     break  
                 
                 time.sleep(delay * 1.5 + random.uniform(0, 1))
                 
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logging.info(f"Error occured: {str(e)}")
         finally:
             self.driver.quit()
-        
+        logging.info(f"Operation finalised, results are {results}")
         return results
 
     def _parse_results(self):
@@ -72,7 +89,8 @@ class GoogleSearchAutomator:
                 link = result.find_element(By.TAG_NAME, "a").get_attribute("href")
                 title = result.find_element(By.CSS_SELECTOR, "h3").text
                 results.append({"title": title, "link": link})
-            except:
+            except Exception as e:
+                logging.info(f"Exception caught : {e}")
                 continue
         return results
 
