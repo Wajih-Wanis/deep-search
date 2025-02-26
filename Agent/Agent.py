@@ -77,7 +77,7 @@ class DeepSearchAgent:
     def __init__(self, model:Model):
         self.model = model
         
-    def generate_search_queries(self, state: OverallState, num_queries: int = 3):
+    def generate_search_queries(self, state: OverallState, num_queries: int = 1):
         prompt = queries_prompt.format(topic=state["topic"], num_queries=num_queries)
         response = self.model._run(prompt)
         parsed = parse_json_response(response)
@@ -108,7 +108,7 @@ class DeepSearchAgent:
                         )
                     )
             except Exception as e:
-                print(f"Error scraping {result.url}: {str(e)}")
+                logging.info(f"Error scraping {result.url}: {str(e)}")
                 continue
         
         return {"scraped_contents": scraped_sites}
@@ -139,7 +139,8 @@ class DeepSearchAgent:
         )
         response = self.model._run(prompt)
         parsed = parse_json_response(response)
-        
+        if not relevant_contents:
+            return {"final_response": {"summary": "No relevant content found.", "sources": []}}
         return {"final_response": {
             "summary": parsed.get("summary", "No summary generated"),
             "sources": parsed.get("sources", [])

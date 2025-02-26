@@ -34,10 +34,12 @@ class Scrapy:
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         self.base_url = base_url
+        logging.info(f"Initializing scrapy for {self.base_url}")
         self.sub_sites = []
         self.visited_sites = set()
         self.scraped_page = []
         self.model = model
+        logging.info("Scrapy initialization complete")
         
     def _extract_content(self,soup:BeautifulSoup):
         for element in soup.select('header, footer, nav, script, style, [class*="menu"], [class*="sidebar"]'):
