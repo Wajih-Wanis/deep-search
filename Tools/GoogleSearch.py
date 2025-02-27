@@ -2,23 +2,13 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import random
-import os
 import logging
-from datetime import datetime
 from urllib.parse import quote_plus
 
-if not os.path.exists('logs'):
-    os.makedirs('logs')
-
-current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_filename = os.path.join('logs', f"log_{current_time}.log")
-
 class GoogleSearchAutomator:
-    def __init__(self, headless=False):
-        # The headless parameter is kept for signature compatibility but isn't used
+    def __init__(self):
         logging.info("Initializing GoogleSearchAutomator")
         try:
-            logging.info("Creating new Session instance")
             self.session = requests.Session()
             self.headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -30,11 +20,6 @@ class GoogleSearchAutomator:
         except Exception as e:
             logging.error(f"Failed to create Session instance: {str(e)}")
             raise
-        
-    def human_type(self, element, text):
-        """Simulate human typing with random delays - kept for compatibility"""
-        # This method isn't needed for requests but kept for signature compatibility
-        pass
 
     def search_google(self, query, pages=1, delay=2, scholar=False):
         results = []
@@ -42,24 +27,23 @@ class GoogleSearchAutomator:
             base_url = "https://scholar.google.com/scholar" if scholar else "https://www.google.com/search"
             encoded_query = quote_plus(query)
             
-            if scholar:
-                logging.info("Google scholar search instance made")
-            else:
-                logging.info("Google search instance made")
+            logging.info(f"{'Google scholar' if scholar else 'Google'} search instance made for query: {query}")
             
-            # Use a different User-Agent each time
+            # Rotate user agents for each request to avoid being blocked
             user_agents = [
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15',
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'
             ]
-            self.headers['User-Agent'] = random.choice(user_agents)
             
             for page in range(pages):
+                # Update user agent for each request
+                self.headers['User-Agent'] = random.choice(user_agents)
+                
                 start_index = page * 10
                 search_url = f"{base_url}?q={encoded_query}&start={start_index}"
                 
-                # Add random delay for subsequent pages
+                # Add delay between pages (but not for the first page)
                 if page > 0:
                     sleep_time = delay + random.uniform(-0.5, 0.5)
                     time.sleep(sleep_time)
@@ -67,20 +51,11 @@ class GoogleSearchAutomator:
                 # Make the request
                 logging.info(f"Requesting URL: {search_url}")
                 response = self.session.get(search_url, headers=self.headers)
-                logging.info(f"Search submitted for query {query}, status: {response.status_code}")
+                logging.info(f"Search response received, status: {response.status_code}")
                 
                 if response.status_code != 200:
                     logging.error(f"Failed to get search results: Status code {response.status_code}")
                     break
-                
-                # Save HTML for debugging if needed
-                with open(f"search_page_{page}.html", "w", encoding="utf-8") as f:
-                    f.write(response.text)
-                logging.info(f"Saved HTML to search_page_{page}.html for debugging")
-                
-                # Simulate scrolling (just a log entry for compatibility)
-                scroll_amount = random.randint(300, 800)
-                logging.info(f"Simulated scroll by {scroll_amount}")
                 
                 # Parse the results
                 page_results = self._parse_results(response.text)
@@ -88,26 +63,30 @@ class GoogleSearchAutomator:
                 
                 logging.info(f"Found {len(page_results)} results on page {page+1}")
                 
+                # If we got fewer results than expected, we've reached the end
                 if len(page_results) < 10:
                     break
                 
-                time.sleep(delay * 1.5 + random.uniform(0, 1))
+                # Add variable delay between pages to appear more human-like
+                if page < pages - 1:
+                    time.sleep(delay + random.uniform(0, 1))
                 
         except Exception as e:
-            logging.error(f"Error occurred: {str(e)}", exc_info=True)
+            logging.error(f"Error occurred during search: {str(e)}", exc_info=True)
         
-        logging.info(f"Operation finalized, found {len(results)} total results")
+        logging.info(f"Search completed, found {len(results)} total results")
         return results
 
     def _parse_results(self, html_content):
         """Extract search results from HTML content"""
         results = []
         soup = BeautifulSoup(html_content, 'html.parser')
-        
-        # Log a small sample of the HTML for debugging
-        html_sample = html_content[:500] + "..." if len(html_content) > 500 else html_content
-        logging.debug(f"HTML Sample: {html_sample}")
-        
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"page_{timestamp}_{random.randint(1, 1000)}.html"
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        logging.info(f"Saved HTML content to {filename}")
         # Try multiple selector patterns that Google might be using
         search_results = []
         
@@ -134,7 +113,7 @@ class GoogleSearchAutomator:
         
         for result in search_results:
             try:
-                # Try to find the link - Google often has multiple <a> tags
+                # Try to find the link
                 link_element = None
                 
                 # First try direct link under the result
@@ -168,7 +147,7 @@ class GoogleSearchAutomator:
                     title = "No title"
                 
                 results.append({"title": title, "link": link})
-                logging.info(f"Found result: {title} - {link}")
+                logging.info(f"Found result: {title[:30]}... - {link}")
                 
             except Exception as e:
                 logging.info(f"Exception caught while parsing result: {e}")
