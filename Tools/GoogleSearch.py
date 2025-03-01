@@ -1,156 +1,266 @@
-import requests
+from seleniumbase import Driver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import time
 import random
 import logging
+import traceback
 from urllib.parse import quote_plus
+import os
+from datetime import datetime
 
 class GoogleSearchAutomator:
     def __init__(self):
+        self.html_output_dir = "html_debug"
+        os.makedirs(self.html_output_dir, exist_ok=True)
+        if not os.path.exists('results'):
+            os.makedirs('results')
         logging.info("Initializing GoogleSearchAutomator")
-        try:
-            self.session = requests.Session()
-            self.headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://www.google.com/'
-            }
-            logging.info("Session instance created successfully")
-        except Exception as e:
-            logging.error(f"Failed to create Session instance: {str(e)}")
-            raise
 
-    def search_google(self, query, pages=1, delay=2, scholar=False):
-        results = []
+    def _save_html_page(self, html_content, query, page_number):
+        """Save HTML content to file for debugging"""
         try:
-            base_url = "https://scholar.google.com/scholar" if scholar else "https://www.google.com/search"
-            encoded_query = quote_plus(query)
+            safe_query = "".join([c if c.isalnum() else "_" for c in query])
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{self.html_output_dir}/{safe_query}_{page_number}_{timestamp}.html"
             
-            logging.info(f"{'Google scholar' if scholar else 'Google'} search instance made for query: {query}")
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            logging.info(f"Saved HTML page: {filename}")
+        except Exception as e:
+            logging.error(f"Failed to save HTML: {str(e)}")
+
+    def _create_driver(self,headless=False):
+        """Create a new driver instance with randomized settings"""
+        try:
             
-            # Rotate user agents for each request to avoid being blocked
-            user_agents = [
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15',
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'
+            window_sizes = [
+                (1280, 800), (1366, 768), (1440, 900), (1536, 864), (1600, 900),
+                (1920, 1080), (1280, 720), (1024, 768)
             ]
             
-            for page in range(pages):
-                # Update user agent for each request
-                self.headers['User-Agent'] = random.choice(user_agents)
-                
-                start_index = page * 10
-                search_url = f"{base_url}?q={encoded_query}&start={start_index}"
-                
-                # Add delay between pages (but not for the first page)
-                if page > 0:
-                    sleep_time = delay + random.uniform(-0.5, 0.5)
-                    time.sleep(sleep_time)
-                
-                # Make the request
-                logging.info(f"Requesting URL: {search_url}")
-                response = self.session.get(search_url, headers=self.headers)
-                logging.info(f"Search response received, status: {response.status_code}")
-                
-                if response.status_code != 200:
-                    logging.error(f"Failed to get search results: Status code {response.status_code}")
+            chosen_window_size = random.choice(window_sizes)
+            
+            driver_options = {
+                "uc": True,             
+                "headless": headless,      
+            }
+            
+            driver = None
+            for attempt in range(3):
+                try:
+                    driver = Driver(**driver_options)
                     break
-                
-                # Parse the results
-                page_results = self._parse_results(response.text)
-                results.extend(page_results)
-                
-                logging.info(f"Found {len(page_results)} results on page {page+1}")
-                
-                # If we got fewer results than expected, we've reached the end
-                if len(page_results) < 10:
-                    break
-                
-                # Add variable delay between pages to appear more human-like
-                if page < pages - 1:
-                    time.sleep(delay + random.uniform(0, 1))
-                
-        except Exception as e:
-            logging.error(f"Error occurred during search: {str(e)}", exc_info=True)
-        
-        logging.info(f"Search completed, found {len(results)} total results")
-        return results
-
-    def _parse_results(self, html_content):
-        """Extract search results from HTML content"""
-        results = []
-        soup = BeautifulSoup(html_content, 'html.parser')
-        import datetime
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"page_{timestamp}_{random.randint(1, 1000)}.html"
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        logging.info(f"Saved HTML content to {filename}")
-        # Try multiple selector patterns that Google might be using
-        search_results = []
-        
-        # Pattern 1: Traditional div.g
-        if not search_results:
-            search_results = soup.select('div.g')
-            logging.info(f"Pattern 1 (div.g) found {len(search_results)} results")
-        
-        # Pattern 2: More recent structure
-        if not search_results:
-            search_results = soup.select('div[jscontroller][data-hveid]')
-            logging.info(f"Pattern 2 (jscontroller) found {len(search_results)} results")
-        
-        # Pattern 3: Result container with links
-        if not search_results:
-            search_results = soup.select('div.tF2Cxc')
-            logging.info(f"Pattern 3 (tF2Cxc) found {len(search_results)} results")
-        
-        # Fallback to any div with a link and header
-        if not search_results:
-            search_results = [div for div in soup.find_all('div') 
-                            if div.find('a') and div.find('h3')]
-            logging.info(f"Pattern 4 (fallback) found {len(search_results)} results")
-        
-        for result in search_results:
+                except Exception as e:
+                    logging.warning(f"Driver creation attempt {attempt+1} failed: {str(e)}")
+                    time.sleep(2)
+                    
+            if driver is None:
+                raise Exception("Failed to create driver after multiple attempts")
+            
             try:
-                # Try to find the link
-                link_element = None
-                
-                # First try direct link under the result
-                link_element = result.find('a')
-                
-                # If not found or not a valid link, try looking deeper
-                if not link_element or not link_element.get('href') or not link_element.get('href').startswith('http'):
-                    # Try to find deeper nested links
-                    deeper_links = result.select('a[href^="http"]')
-                    if deeper_links:
-                        link_element = deeper_links[0]
-                
-                if not link_element or not link_element.get('href'):
+                driver.set_window_size(chosen_window_size[0], chosen_window_size[1])
+            except Exception as e:
+                logging.warning(f"Failed to set window size: {str(e)}, continuing anyway")
+            
+            try:
+                driver.set_page_load_timeout(30)
+                driver.implicitly_wait(10)
+            except Exception as e:
+                logging.warning(f"Failed to set timeouts: {str(e)}, continuing anyway")
+            
+            logging.info(f"Created new driver with window size: {chosen_window_size}")
+            return driver
+        
+        except Exception as e:
+            logging.error(f"Failed to create driver: {str(e)}")
+            traceback.print_exc()
+            return None
+
+    def search_google(self, query, pages=2, scholar=False):
+        """Perform a Google search and extract all search result links"""
+        results = []
+        driver = None
+        
+        for attempt in range(3):
+            try:
+                driver = self._create_driver()
+                if not driver:
+                    logging.error("Failed to create driver, retrying...")
+                    time.sleep(2)
                     continue
                     
-                link = link_element.get('href')
+                base_url = "https://scholar.google.com/" if scholar else "https://www.google.com/"
                 
-                # Skip non-http links or Google internal links
-                if (not link.startswith('http://') and not link.startswith('https://')) or 'google.com' in link:
-                    continue
+                logging.info(f"Navigating to {base_url}")
+                driver.get(base_url)
+                wait_time = 2 + random.random() * 2
+                time.sleep(wait_time)
                 
-                # Try to find the title - look for h3 within the result or near the link
-                title_element = result.find('h3')
-                if not title_element:
-                    # If no h3, try to get the link text
-                    title = link_element.get_text().strip()
-                else:
-                    title = title_element.get_text().strip()
+                self._handle_consent_and_cookies(driver)
                 
-                if not title:
-                    title = "No title"
+                logging.info(f"Entering search query: {query}")
+                try:
+                    search_box = driver.find_element(By.NAME, "q")
+                    search_box.clear()
+                    search_box.send_keys(query)
+                    search_box.send_keys(Keys.RETURN)
+                except:
+                    encoded_query = quote_plus(query)
+                    search_url = f"{base_url}search?q={encoded_query}&hl=en"
+                    logging.info(f"Navigating directly to search URL: {search_url}")
+                    driver.get(search_url)
                 
-                results.append({"title": title, "link": link})
-                logging.info(f"Found result: {title[:30]}... - {link}")
+                wait_time = 2 + random.random() * 2
+                logging.info(f"Waiting {wait_time:.2f}s for search results to load")
+                time.sleep(wait_time)
+                
+                for page_num in range(1, pages + 1):
+                    logging.info(f"Processing page {page_num}")
+                    
+                    try:
+                        WebDriverWait(driver, 10).until(
+                            EC.presence_of_element_located((By.ID, "search"))
+                        )
+                    except:
+                        logging.warning("Search results element not found, continuing anyway")
+                    
+                    html_content = driver.page_source
+                    self._save_html_page(html_content, query, page_num)
+                    
+                    page_results = self._parse_results(html_content)
+                    
+                    for result in page_results:
+                        if result not in results:
+                            results.append(result)
+                    
+                    logging.info(f"Found {len(page_results)} results on page {page_num}")
+                    
+                    if page_num < pages:
+                        try:
+                            next_button = driver.find_element(By.ID, "pnnext")
+                            next_button.click()
+                            logging.info(f"Navigated to page {page_num + 1}")
+                            wait_time = 2 + random.random() * 3
+                            logging.info(f"Waiting {wait_time:.2f}s for next page")
+                            time.sleep(wait_time)
+                        except Exception as e:
+                            logging.warning(f"Could not navigate to next page: {str(e)}")
+                            break
+                
+                self._save_results_to_file(query, results)
+                
+                break
                 
             except Exception as e:
-                logging.info(f"Exception caught while parsing result: {e}")
-                continue
+                logging.error(f"Search attempt {attempt+1} failed: {str(e)}")
+                
+            finally:
+                if driver:
+                    try:
+                        driver.quit()
+                        logging.info("Driver closed successfully")
+                    except:
+                        logging.warning("Error closing driver")
         
+        return results
+    
+    def _save_results_to_file(self, query, results):
+        """Save search results to a text file"""
+        try:
+            current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            query_slug = query.replace(' ', '_').lower()[:20]
+            links_filename = os.path.join('results', f"{query_slug}_{current_time}.txt")
+            
+            with open(links_filename, 'w', encoding='utf-8') as file:
+                for result in results:
+                    file.write(f"{result['link']}\n")
+            
+            logging.info(f"Saved {len(results)} links to {links_filename}")
+        except Exception as e:
+            logging.error(f"Error saving results to file: {str(e)}")
+    
+    def _handle_consent_and_cookies(self, driver):
+        """Handle any consent or cookie dialogs that might appear"""
+        try:
+            consent_selectors = [
+                "button#L2AGLb", 
+                "div.J2QUgc button", 
+                "form[action*='consent'] button", 
+                "button[aria-label*='consent']",
+                "button[jsname='higCR']",
+                "//button[contains(., 'Accept all')]",
+                "//button[contains(., 'I agree')]",
+                "//button[contains(., 'Agree')]"
+            ]
+            
+            for selector in consent_selectors:
+                try:
+                    if selector.startswith("//"):
+                        consent_button = WebDriverWait(driver, 3).until(
+                            EC.element_to_be_clickable((By.XPATH, selector))
+                        )
+                    else:
+                        consent_button = WebDriverWait(driver, 3).until(
+                            EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                        )
+                    
+                    time.sleep(random.uniform(0.5, 1.5))
+                    consent_button.click()
+                    logging.info(f"Clicked consent button with selector: {selector}")
+                    time.sleep(random.uniform(1, 2))
+                    return
+                except:
+                    continue
+                    
+        except Exception as e:
+            logging.info(f"No consent dialogs found or error handling them: {str(e)}")
+    
+    def _parse_results(self, html_content):
+        """Parse search results from HTML content"""
+        soup = BeautifulSoup(html_content, 'html.parser')
+        results = []
+        
+        selectors = [
+            "div.g .yuRUbf a",
+            "div.tF2Cxc .yuRUbf a",
+            "div.g a[href^='http']",
+            "div.MjjYud a[jsname='UWckNb']",
+            'div[data-header-feature="0"] a[href^="http"]',
+            'div.g:not(.g-blk) a[href^="http"]',
+            'div[data-snf] a[href^="http"]',
+            'a[jsname="UWckNb"]',
+            'div[jsname="NokBGb"] a[href^="http"]'
+        ]
+        
+        for selector in selectors:
+            search_results = soup.select(selector)
+            if search_results:
+                logging.info(f"Found {len(search_results)} results with {selector}")
+                for result in search_results:
+                    try:
+                        href = result['href']
+                        
+                        if ('google.com' in href or not href.startswith('http') or 
+                            'webcache' in href or 'translate.google' in href):
+                            continue
+                        
+                        title = result.text.strip()
+                        if not title and result.find_parent():
+                            h3 = result.find_parent().find('h3')
+                            if h3:
+                                title = h3.text.strip()
+                        
+                        if not title:
+                            title = href
+                            
+                        result_item = {"title": title, "link": href}
+                        if result_item not in results:
+                            results.append(result_item)
+                    except Exception as e:
+                        logging.debug(f"Error parsing result: {str(e)}")
+            
         return results
