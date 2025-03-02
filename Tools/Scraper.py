@@ -15,8 +15,9 @@ from datetime import datetime
 if not os.path.exists('logs'):
     os.makedirs('logs')
 
+
 current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_filename = os.path.join('logs', f"log_{current_time}.log")
+log_filename = os.path.join('logs', f"scraper_log_{current_time}.log")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,14 +42,32 @@ class Scrapy:
         self.model = model
         logging.info("Scrapy initialization complete")
         
-    def _extract_content(self,soup:BeautifulSoup):
-        for element in soup.select('header, footer, nav, script, style, [class*="menu"], [class*="sidebar"]'):
+    def _extract_content(self, soup:BeautifulSoup):
+        """Extract main content from HTML soup, removing noise elements"""
+        for element in soup.select('header, footer, nav, script, style, [class*="menu"], [class*="sidebar"], [class*="banner"], [class*="ad"], [id*="ad"], [class*="cookie"], [class*="popup"]'):
             element.decompose()
         
-        content = soup.find('main') or soup.find('article') or soup.find('div', class_=re.compile(r'content|main|article'))
+        content_containers = [
+            soup.find('main'),
+            soup.find('article'),
+            soup.find('div', class_=re.compile(r'content|main|article|post|entry')),
+            soup.find('div', id=re.compile(r'content|main|article|post|entry')),
+            soup.select_one('.content, .main, .article, .post, .entry'),
+            soup.select_one('#content, #main, #article, #post, #entry')
+        ]
         
-        if content:
-            return content.get_text(separator=' ', strip=True)
+        for container in content_containers:
+            if container:
+                content = container.get_text(separator=' ', strip=True)
+                content = re.sub(r'\s+', ' ', content).strip()
+                return content
+                
+        body = soup.find('body')
+        if body:
+            content = body.get_text(separator=' ', strip=True)
+            content = re.sub(r'\s+', ' ', content).strip()
+            return content
+            
         return soup.get_text(separator=' ', strip=True)
 
     def _is_valid_url(self,url:str):
@@ -75,7 +94,7 @@ class Scrapy:
             return False
         
         
-    def dismantle_webpage(self,url:str,user_prompt:str=""):
+    def dismantle_webpage(self,url:str,user_prompt:str="",get_sublinks = False):
         """
         user_prompt : Parameter for the user to specify the goal of the scraping the website / webpage
         """
@@ -92,16 +111,17 @@ class Scrapy:
                 'content': content
             }
             self.scraped_page.append(page_data)
-            links = []
-            for link in soup.find_all('a',href=True):
-                full_url = urljoin(url,link['href'])
-                if self._is_valid_url(full_url):
-                    links.append(full_url)
-            if links:
-                links = self.sub_link_filter(links,user_prompt)
-                for link in links:
-                    if link not in self.visited_sites:
-                        self.sub_sites.append(link)
+            if get_sublinks:
+                links = []
+                for link in soup.find_all('a',href=True):
+                    full_url = urljoin(url,link['href'])
+                    if self._is_valid_url(full_url):
+                        links.append(full_url)
+                if links:
+                    links = self.sub_link_filter(links,user_prompt)
+                    for link in links:
+                        if link not in self.visited_sites:
+                            self.sub_sites.append(link)
             
         except Exception as e:
             logging.info(e)
