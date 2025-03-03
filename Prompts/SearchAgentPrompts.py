@@ -1,5 +1,12 @@
-queries_prompt = """Generate {num_queries} different search queries to thoroughly research this topic: {topic}.
-The queries generated must be google searchable. 
+from datetime import datetime
+
+today = datetime.now()
+
+todaysdate = f"Today is {today} "
+
+
+queries_prompt = todaysdate+"""Generate {num_queries} different search queries to thoroughly research this topic: {topic}.
+The queries generated must be google searchable.
 Return your response in this exact JSON format:
 {{
     "queries": ["query1", "query2", "query3"]
