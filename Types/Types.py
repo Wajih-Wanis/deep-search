@@ -1,4 +1,4 @@
-from typing import List, TypedDict, Annotated
+from typing import List, TypedDict, Annotated, Dict, Any
 import operator
 from pydantic import BaseModel
 
@@ -18,3 +18,11 @@ class RelevanceScore(BaseModel):
 class FinalResponse(BaseModel):
     summary: str
     sources: list[str]
+
+class Document(TypedDict):
+    page_content: str
+    metadata: Dict[str, Any]
+    
+class QueryResult(TypedDict):
+    answer: str
+    sources: List[str]
