@@ -12,6 +12,20 @@ from urllib.parse import quote_plus
 import os
 from datetime import datetime
 
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+log_filename = os.path.join('logs', f"google_search_log_{current_time}.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename=log_filename,
+    filemode='w',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 class GoogleSearchAutomator:
     def __init__(self):
         self.html_output_dir = "html_debug"
@@ -33,7 +47,7 @@ class GoogleSearchAutomator:
         except Exception as e:
             logging.error(f"Failed to save HTML: {str(e)}")
 
-    def _create_driver(self,headless=False):
+    def _create_driver(self,headless=True):
         """Create a new driver instance with randomized settings"""
         try:
             
