@@ -9,12 +9,10 @@ def create_app():
     
     CORS(app, resources={r"/*": {"origins": "*"}})
     
-    # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
     oauth.init_app(app)
     
-    # Register blueprints
     from app.routes.auth import auth_bp
     from app.routes.chats import chats_bp
     from app.routes.ai import ai_bp

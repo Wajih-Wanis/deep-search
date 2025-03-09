@@ -27,7 +27,8 @@ logging.basicConfig(
 )
 
 class GoogleSearchAutomator:
-    def __init__(self):
+    def __init__(self,debug=False):
+        self.debug = debug
         self.html_output_dir = "html_debug"
         os.makedirs(self.html_output_dir, exist_ok=True)
         if not os.path.exists('results'):
@@ -143,7 +144,8 @@ class GoogleSearchAutomator:
                         logging.warning("Search results element not found, continuing anyway")
                     
                     html_content = driver.page_source
-                    self._save_html_page(html_content, query, page_num)
+                    if self.debug:
+                        self._save_html_page(html_content, query, page_num)
                     
                     page_results = self._parse_results(html_content)
                     
@@ -164,8 +166,8 @@ class GoogleSearchAutomator:
                         except Exception as e:
                             logging.warning(f"Could not navigate to next page: {str(e)}")
                             break
-                
-                self._save_results_to_file(query, results)
+                if self.debug:
+                    self._save_results_to_file(query, results)
                 
                 break
                 

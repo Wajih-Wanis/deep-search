@@ -18,7 +18,7 @@ if not os.path.exists('logs'):
     os.makedirs('logs')
 
 current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_filename = os.path.join('logs', f"retriever_log_{current_time}.log")
+log_filename = os.path.join('logs', f"log_{current_time}.log")
 
 
 logging.basicConfig(
@@ -77,7 +77,6 @@ class FaissRetriever(Retriever):
             self.vector_store = FAISS.from_documents(
                 documents=docs,
                 embedding=self.embedding_model,
-                index_name=self.index_name
             )
         else:
             self.vector_store.add_documents(documents=docs)
@@ -141,7 +140,7 @@ class FaissRetriever(Retriever):
         self.vector_store = FAISS.load_local(
             folder_path=load_path,
             embeddings=self.embedding_model,
-            index_name=self.index_name
+            index_name=self.persist_directory
         )
     
     def set_reranker(self, reranker: Any) -> None:

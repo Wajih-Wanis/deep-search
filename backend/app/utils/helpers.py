@@ -1,8 +1,10 @@
+# Fixed helpers.py
 from functools import wraps
 from flask import jsonify, request
 from bson import ObjectId
 import json
 import logging
+from jsonschema import validate, ValidationError
 
 def json_response(data=None, status=200, message=None):
     """Standardize API response format"""
@@ -56,15 +58,33 @@ def parse_json(schema=None):
                 return json_response(message="Invalid JSON format", status=400)
             except ValueError as e:
                 return json_response(message=str(e), status=400)
+            except ValidationError as e:
+                return json_response(message=f"Schema validation error: {e.message}", status=400)
             return f(*args, **kwargs)
         return wrapper
     return decorator
 
 def validate_schema(data, schema):
-    """Custom schema validation logic"""
-    # Implement your schema validation logic here
-    # Example: check required fields, data types, etc.
+    """Proper schema validation with jsonschema"""
+    # First check required fields
     required_fields = schema.get('required', [])
     for field in required_fields:
         if field not in data:
             raise ValueError(f"Missing required field: {field}")
+    
+    # Then validate property types if specified
+    properties = schema.get('properties', {})
+    for field, field_schema in properties.items():
+        if field in data:
+            if field_schema.get('type') == 'object' and not isinstance(data[field], dict):
+                raise ValueError(f"Field '{field}' must be an object")
+            elif field_schema.get('type') == 'array' and not isinstance(data[field], list):
+                raise ValueError(f"Field '{field}' must be an array")
+            elif field_schema.get('type') == 'string' and not isinstance(data[field], str):
+                raise ValueError(f"Field '{field}' must be a string")
+            elif field_schema.get('type') == 'number' and not isinstance(data[field], (int, float)):
+                raise ValueError(f"Field '{field}' must be a number")
+    
+    # Use jsonschema for more complex validations
+    if 'jsonschema' in schema:
+        validate(instance=data, schema=schema['jsonschema'])

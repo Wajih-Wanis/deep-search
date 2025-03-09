@@ -1,31 +1,36 @@
 import bcrypt
 from flask import current_app, url_for
+from flask_jwt_extended import create_access_token
 from app.models.user import User
 from app.extensions import oauth
-from datetime import datetime
-from app.extensions import db
-
+from datetime import datetime, timedelta
 
 def register_user(email: str, password: str):
-    # Check if user exists
     if User.find_by_email(email):
         return {'success': False, 'error': 'Email already exists'}
     
-    # Create new user
     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-    result = User.create(email, hashed.decode('utf-8'))    
-    result = db.users.insert_one({
-        'email': email,
-        'password_hash': hashed.decode('utf-8'),
-        'created_at': datetime.utcnow()
-    })
+    result = User.create(email, hashed.decode('utf-8'))
     
     return {'success': True, 'user_id': str(result.inserted_id)}
+
 
 def login_user(email: str, password: str):
     user = User.find_by_email(email)
     if user and bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
-        return {'success': True, 'user': user}
+        access_token = create_access_token(
+            identity=str(user['_id']), 
+            expires_delta=timedelta(days=1)
+        )
+        return {
+            'success': True, 
+            'user': {
+                'id': str(user['_id']),
+                'email': user['email'],
+                'name': user.get('name')
+            },
+            'access_token': access_token
+        }
     return {'success': False, 'error': 'Invalid credentials'}
 
 def handle_google_authorization():
@@ -42,10 +47,14 @@ def handle_google_callback():
     user = User.find_by_email(user_info['email'])
     
     if not user:
-        user = User.create(
+        result = User.create(
             email=user_info['email'],
             password_hash=None,
             name=user_info.get('name')
         )
+        user = User.find_by_id(result.inserted_id)
     
-    return create_access_token(identity=str(user['_id']))
+    return create_access_token(
+        identity=str(user['_id']),
+        expires_delta=timedelta(days=1)
+    )

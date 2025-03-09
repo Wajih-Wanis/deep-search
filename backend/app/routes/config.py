@@ -61,7 +61,6 @@ def set_model_parameters():
     user_id = get_jwt_identity()
     data = request.parsed_data
     
-    # Store parameters in user's session or database
     User.update_model_parameters(
         user_id,
         data['model_name'],

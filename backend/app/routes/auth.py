@@ -42,7 +42,7 @@ def google_login():
 def google_callback():
     token = handle_google_callback()
     if token:
-        response = redirect(url_for('frontend.home'))  # Adjust to your frontend
+        response = redirect(url_for('frontend.home'))  
         set_access_cookies(response, token)
         return response
     return jsonify({'success': False, 'error': 'Google login failed'}), 401
