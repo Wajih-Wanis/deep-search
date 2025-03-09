@@ -1,3 +1,4 @@
+from bson import ObjectId
 import requests
 import pymongo
 import logging
@@ -83,7 +84,7 @@ def test_full_flow():
             user = db.users.find_one({"email": "test@example.com"})
             assert user, "User not found in database"
             
-            chat = db.chats.find_one({"_id": chat_id})
+            chat = db.chats.find_one({"_id": ObjectId(chat_id)})
             assert chat, "Chat not found in database"
             
             messages = list(db.messages.find({"chat_id": chat_id}))

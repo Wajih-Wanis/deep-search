@@ -1,4 +1,3 @@
-# Fixed ai_service.py
 from flask import jsonify
 from app.models.message import Message
 from app.models.chat import Chat
@@ -68,13 +67,21 @@ def handle_deep_search(user_id, data):
         }), 400
     
     try:
-        # Get user's model configuration
-        #user = User.find_by_id(user_id)
-        #provider = user.get('providers', {}).get('default', 'ollama')
-        #model_config = user.get('config', {})
+        user = User.find_by_id(user_id)
+        model_config = user.get('config', {})
         
-        #model = ModelSelector.get_model(provider, model_config)
-        model = OllamaModel()
+        model_name = model_config.get('model', 'deepseek-r1:8b')
+        model_params = model_config.get('parameters', {})
+        temperature = model_params.get('temperature', 0)
+
+        try:
+            model = OllamaModel(
+                model=model_name,
+                temperature=temperature
+            )
+        except Exception as e:
+            logging.error(f"Model initialization failed: {str(e)}, using default")
+            model = OllamaModel() 
         agent = DeepSearchAgent(model=model)
         
         chat = Chat.create(
@@ -98,6 +105,7 @@ def handle_deep_search(user_id, data):
             role='assistant',
             metadata={
                 'type': 'deep_search',
+                'sources': results['final_response'].get('sources', [])
             }
         )
         
