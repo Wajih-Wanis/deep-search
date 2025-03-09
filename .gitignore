@@ -5,3 +5,5 @@ logs
 .venv
 .env
 downloaded_files
+
+*.log
