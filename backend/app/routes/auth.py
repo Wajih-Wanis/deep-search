@@ -18,7 +18,17 @@ auth_bp = Blueprint('auth', __name__)
 def register():
     data = request.json
     result = register_user(data['email'], data['password'])
-    return jsonify(result), 201 if result['success'] else 400
+    
+    if result['success']:
+        access_token = create_access_token(identity=str(result['user_id']))
+        response = jsonify({
+            'success': True,
+            'user_id': result['user_id']
+        })
+        set_access_cookies(response, access_token)
+        return response
+    
+    return jsonify(result), 400
 
 @auth_bp.route('/login', methods=['POST'])
 @validate_json({

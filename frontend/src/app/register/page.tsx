@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -16,7 +16,7 @@ const formSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -25,12 +25,14 @@ export default function LoginPage() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await api.post("/auth/login", values);
-      if (response.data.access_token) {
+      const response = await api.post("/auth/register", values);
+      if (response.status === 200) {
         router.push("/");
       }
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (error: any) {
+      form.setError("root", {
+        message: error.response?.data?.error || "Registration failed",
+      });
     }
   };
 
@@ -38,7 +40,7 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Sign in to continue</CardTitle>
+          <CardTitle>Create an Account</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -69,27 +71,20 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
+              {form.formState.errors.root && (
+                <p className="text-destructive text-sm">
+                  {form.formState.errors.root.message}
+                </p>
+              )}
               <Button 
                 type="submit" 
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Signing in..." : "Sign In"}
+                {form.formState.isSubmitting ? "Creating account..." : "Register"}
               </Button>
-              
             </form>
           </Form>
-          <div className="text-center mt-4">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <a 
-                href="/register" 
-                className="text-primary underline underline-offset-4 hover:text-primary/80"
-              >
-                Register here
-              </a>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
