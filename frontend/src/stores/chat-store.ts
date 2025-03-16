@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { api } from "@/lib/api";
@@ -31,9 +32,12 @@ export const useStore = create<State & Actions>()(immer((set, get) => ({
     try {
       const { data } = await api.get<Chat[]>("/chats");
       set({ chats: data, isLoading: false });
-    } catch (error) {
-        console.log(error)
-      set({ error: "Failed to load chats", isLoading: false });
+    } catch (error: any) {
+      console.error("Chat load error:", error);
+      set({ 
+        error: error.response?.data?.message || "Failed to load chats",
+        isLoading: false
+      });
     }
   },
 
@@ -74,7 +78,7 @@ export const useStore = create<State & Actions>()(immer((set, get) => ({
         content,
         role: "user",
         created_at: new Date().toISOString(),
-        chat_id: ""
+        chat_id: activeChatId
     };
 
     // Optimistic update

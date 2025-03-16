@@ -8,7 +8,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Configure CORS with explicit settings
     CORS(
         app,
         origins="http://localhost:3000",  # Allow only your frontend origin
@@ -16,7 +15,6 @@ def create_app():
         allow_headers=["Content-Type", "Authorization"],  # Explicitly allowed headers
     )
 
-    # Optional CORS logging (for debugging)
     cors_logger = logging.getLogger('flask_cors')
     cors_logger.setLevel(logging.INFO)
     handler = logging.FileHandler('cors.log')
@@ -25,12 +23,10 @@ def create_app():
     ))
     cors_logger.addHandler(handler)
 
-    # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
     oauth.init_app(app)
 
-    # Register blueprints
     from app.routes.auth import auth_bp
     from app.routes.chats import chats_bp
     from app.routes.ai import ai_bp

@@ -46,7 +46,8 @@ def handle_chat(user_id, data):
         return jsonify({
             'success': True,
             'response': response,
-            'message_id': str(ai_msg['_id'])
+            'message_id': str(ai_msg['_id']),
+            'created_at': ai_msg['created_at'].isoformat()
         })
         
     except Exception as e:

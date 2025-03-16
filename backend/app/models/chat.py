@@ -9,8 +9,8 @@ class Chat:
             'user_id': user_id,
             'title': title,
             'is_deep_search': is_deep_search,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
         }
         result = db.db.chats.insert_one(chat_data)
         return cls.get_by_id(result.inserted_id)

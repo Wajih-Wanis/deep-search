@@ -36,7 +36,7 @@ export function MessageBubble({ message }: { message: Message }) {
             : "bg-primary text-primary-foreground rounded-tl-none"
         )}>
           <div className="text-sm mb-2 opacity-75">
-            {format(new Date(message.created_at), "HH:mm")}
+            {format(new Date(message.created_at || Date.now()), "HH:mm")}
           </div>
           
           {isCodeBlock ? (

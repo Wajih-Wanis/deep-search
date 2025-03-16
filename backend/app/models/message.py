@@ -10,7 +10,7 @@ class Message:
             'content': content,
             'role': role,
             'metadata': metadata or {},
-            'created_at': datetime.utcnow()
+            'created_at': datetime.now()
         }
         result = db.db.messages.insert_one(message_data)
         return cls.get_by_id(result.inserted_id)

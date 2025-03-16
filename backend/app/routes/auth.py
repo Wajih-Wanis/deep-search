@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, redirect, url_for
-from flask_jwt_extended import create_access_token, set_access_cookies
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, set_access_cookies
 from app.services.auth_service import (
     register_user,
     login_user,
@@ -43,6 +43,16 @@ def login():
         set_access_cookies(response, result['access_token'])
         return response
     return jsonify(result), 401
+
+
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    current_user = get_jwt_identity()
+    new_token = create_access_token(identity=current_user)
+    response = jsonify({'success': True})
+    set_access_cookies(response, new_token)
+    return response
 
 @auth_bp.route('/google/login')
 def google_login():
