@@ -19,10 +19,14 @@ export function ChatMessages({ className }: { className?: string }) {
   };
   
   useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom();
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight <= 100;
+      if (isNearBottom) {
+        scrollToBottom();
+      }
     }
-  }, [messages.length]);
+  }, [messages]);
   
   const handleScroll = () => {
     if (containerRef.current) {
@@ -32,10 +36,10 @@ export function ChatMessages({ className }: { className?: string }) {
   };
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full min-h-0">
       <div 
         ref={containerRef}
-        className={cn("p-4 overflow-y-auto h-full", className)}
+        className={cn("p-4 overflow-y-auto h-full min-h-0", className)}
         onScroll={handleScroll}
       >
         {isLoading ? (

@@ -14,9 +14,9 @@ export function ChatInput({ className }: { className?: string }) {
     e.preventDefault();
     const content = textareaRef.current?.value.trim();
     if (!content || isLoading) return;
+    if (textareaRef.current) textareaRef.current.value = "";
 
     await sendMessage(content);
-    if (textareaRef.current) textareaRef.current.value = "";
   };
 
   return (
