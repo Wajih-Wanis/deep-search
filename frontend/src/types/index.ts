@@ -13,6 +13,7 @@ export interface Chat {
     role: "user" | "assistant";
     created_at: string;
     chat_id: string;
+    isLoading?: boolean;
     metadata?: {
       sources?: string[];
       type?: string;

@@ -11,7 +11,7 @@ import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 export function MessageBubble({ message }: { message: Message }) {
   const isAssistant = message.role === "assistant";
   const isCodeBlock = message.content.startsWith("```");
-
+  const isLoading = message.isLoading;
   return (
     <div className={cn(
       "flex gap-3 mb-4",
@@ -33,13 +33,20 @@ export function MessageBubble({ message }: { message: Message }) {
           "p-4 overflow-hidden",
           isAssistant 
             ? "bg-muted rounded-tr-none" 
-            : "bg-primary text-primary-foreground rounded-tl-none"
+            : "bg-primary text-primary-foreground rounded-tl-none",
+            isLoading && "animate-pulse" 
         )}>
           <div className="text-sm mb-2 opacity-75">
             {format(new Date(message.created_at || Date.now()), "HH:mm")}
           </div>
           
-          {isCodeBlock ? (
+          {isLoading ? (
+            <div className="flex space-x-1">
+              <div className="animate-bounce">.</div>
+              <div className="animate-bounce delay-100">.</div>
+              <div className="animate-bounce delay-200">.</div>
+            </div>
+          ) : isCodeBlock ? (
             <SyntaxHighlighter 
               language="typescript"
               style={atomOneDark}
