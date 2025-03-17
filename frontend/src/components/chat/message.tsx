@@ -11,7 +11,29 @@ import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 export function MessageBubble({ message }: { message: Message }) {
   const isAssistant = message.role === "assistant";
   const isCodeBlock = message.content.startsWith("```");
-  const isLoading = message.isLoading;
+  const isLoading = message.isLoading ?? false;
+
+  const getValidDate = (dateString?: string | null) => {
+    if (!dateString) return new Date();
+    
+    const parsedDate = new Date(dateString);
+    if (!isNaN(parsedDate.getTime())) return parsedDate;
+    
+    return new Date();
+  };
+
+  const formatTime = (date: Date) => {
+    try {
+      return format(date, "HH:mm");
+    } catch (e) {
+      console.error("Date formatting error:", e);
+      return "00:00";
+    }
+  };
+
+  const validDate = getValidDate(message.created_at);
+  const formattedTime = formatTime(validDate);
+
   return (
     <div className={cn(
       "flex gap-3 mb-4",
@@ -34,10 +56,11 @@ export function MessageBubble({ message }: { message: Message }) {
           isAssistant 
             ? "bg-muted rounded-tr-none" 
             : "bg-primary text-primary-foreground rounded-tl-none",
-            isLoading && "animate-pulse" 
+          isLoading && "animate-pulse" 
         )}>
+ 
           <div className="text-sm mb-2 opacity-75">
-            {format(new Date(message.created_at || Date.now()), "HH:mm")}
+            {formattedTime}
           </div>
           
           {isLoading ? (

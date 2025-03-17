@@ -17,7 +17,7 @@ type State = {
 
 type Actions = {
   loadChats: () => Promise<void>;
-  createChat: () => Promise<void>;
+  createChat: () => Promise<string | null>;
   selectChat: (chatId: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   deleteChat: (chatId: string) => Promise<void>;
@@ -56,12 +56,13 @@ export const useStore = create<State & Actions>()(
           state.activeChatId = data.id;
           state.messages = [];
         });
+        return data.id; // Return the new chat ID
       } catch (error) {
         console.log(error);
         set({ error: "Failed to create chat" });
+        return null;
       }
     },
-
     selectChat: async (chatId) => {
       if (get().activeChatId === chatId) return;
       
@@ -76,11 +77,18 @@ export const useStore = create<State & Actions>()(
     },
 
     sendMessage: async (content) => {
-      const { activeChatId } = get();
-      if (!activeChatId || get().isGenerating) return;
+      if (get().isGenerating) return;
+
+      let targetChatId = get().activeChatId;
+      if (!targetChatId) {
+        targetChatId = await get().createChat();
+        if (!targetChatId) return;
+      }
 
       const source = axios.CancelToken.source();
       set({cancelTokenSource: source, isGenerating: true});
+      
+     
 
       const tempId = `temp-${Date.now()}`;
       const userMessage: Message = {
@@ -88,7 +96,7 @@ export const useStore = create<State & Actions>()(
         content,
         role: "user",
         created_at: new Date().toISOString(),
-        chat_id: activeChatId,
+        chat_id: targetChatId,
       };
 
       const loadingMessage: Message = {
@@ -96,7 +104,7 @@ export const useStore = create<State & Actions>()(
         content: "...",
         role: "assistant",
         created_at: new Date().toISOString(),
-        chat_id: activeChatId,
+        chat_id: targetChatId,
         isLoading: true
       }
 
@@ -109,7 +117,7 @@ export const useStore = create<State & Actions>()(
       try {
         const { data } = await api.post<{message_id: string, response: string}>("/ai/chat", {
           message: content, 
-          chat_id: activeChatId,
+          chat_id: targetChatId,
         },
       { cancelToken: source.token});
 
@@ -123,7 +131,7 @@ export const useStore = create<State & Actions>()(
               content: data.response,
               role: "assistant",
               created_at: new Date().toISOString(),
-              chat_id: activeChatId
+              chat_id: targetChatId
             };
           }
           state.isGenerating = false;
