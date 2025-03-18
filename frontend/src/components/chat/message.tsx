@@ -84,10 +84,23 @@ export function MessageBubble({ message }: { message: Message }) {
 
           {message.metadata?.sources && (
             <div className="mt-3 pt-2 border-t text-xs opacity-75">
-              Sources: {message.metadata.sources.join(', ')}
+              Sources:{" "}
+              {message.metadata.sources.map((source, index) => (
+                <span key={index}>
+                  <a
+                    href={source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-primary"
+                  >
+                    {new URL(source).hostname}
+                  </a>
+                  {index < message.metadata.sources.length - 1 && ", "}
+                </span>
+              ))}
             </div>
           )}
-        </Card>
+                  </Card>
       </div>
     </div>
   );

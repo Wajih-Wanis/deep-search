@@ -36,6 +36,16 @@ export function ChatMessages({ className }: { className?: string }) {
     }
   };
 
+  useEffect(() => {
+    if (containerRef.current && !isLoading) {
+      const { scrollHeight, clientHeight } = containerRef.current;
+      const shouldScroll = scrollHeight - clientHeight < 200;
+      if (shouldScroll) {
+        scrollToBottom();
+      }
+    }
+  }, [activeMessages.length, isLoading]);
+
   return (
     <div className="relative h-full">
       <div 

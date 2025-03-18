@@ -5,11 +5,15 @@ import { useStore } from "@/stores/chat-store";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/components/ui/lib";
+import { useDeepSearchStore } from "./deep-search/deep-search-service";
+import { Search } from "lucide-react";
 
 export function ChatInput({ className }: { className?: string }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { sendMessage, isLoading, isGenerating, interruptGeneration } = useStore();
-
+  const { isDeepSearchActive, toggleDeepSearch } = useDeepSearchStore();
+  const { activeChatId } = useStore();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const content = textareaRef.current?.value.trim();
@@ -25,7 +29,7 @@ export function ChatInput({ className }: { className?: string }) {
         <Textarea
           ref={textareaRef}
           placeholder="Type your message..."
-          className="pr-12 resize-none"
+          className="pr-24 resize-none"
           rows={1}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -34,6 +38,17 @@ export function ChatInput({ className }: { className?: string }) {
             }
           }}
         />
+        {activeChatId && (
+          <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-14 bottom-2"
+          onClick={() => toggleDeepSearch()}
+        >
+          <Search className={`h-4 w-4 ${isDeepSearchActive ? "text-primary" : "text-muted-foreground"}`} />
+        </Button>
+        )}
         <Button
           type={isGenerating ? "button" : "submit"}
           size="sm"

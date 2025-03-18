@@ -28,7 +28,7 @@ class OllamaModel(Model):
         for model in response.models:
             result.update({model.model:model.size.real/1024/1024})
         
-    def __init__(self,model="deepseek-r1:8b",temperature=0):
+    def __init__(self,model="llama3.2:1b",temperature=0):
         self.model = OllamaLLM(model=model,temperature=temperature) 
         
     
