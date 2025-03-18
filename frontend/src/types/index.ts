@@ -1,7 +1,7 @@
 export interface Chat {
     id: string;
     title: string;
-    is_deep_search: boolean;
+    is_deep_search?: boolean;
     created_at: string;
     updated_at: string;
     user_id: string;
@@ -16,7 +16,7 @@ export interface Chat {
     isLoading?: boolean;
     metadata?: {
       sources?: string[];
-      type?: string;
+      type?: "deep_search";
     };
   }
   

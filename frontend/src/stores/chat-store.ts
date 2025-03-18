@@ -4,6 +4,7 @@ import { immer } from "zustand/middleware/immer";
 import { api } from "@/lib/api";
 import { Chat, Message } from "@/types";
 import axios, { CancelTokenSource } from "axios";
+import { useDeepSearchStore } from "@/components/chat/deep-search/deep-search-service";
 
 type State = {
   chats: Chat[];
@@ -77,6 +78,15 @@ export const useStore = create<State & Actions>()(
     },
 
     sendMessage: async (content) => {
+
+      const {isDeepSearchActive, sendDeepSearchMessage } = useDeepSearchStore.getState();
+
+      if (isDeepSearchActive) {
+        await sendDeepSearchMessage(content);
+        return;
+      }
+
+
       if (get().isGenerating) return;
 
       let targetChatId = get().activeChatId;

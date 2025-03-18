@@ -9,6 +9,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export function MessageBubble({ message }: { message: Message }) {
+  
   const isAssistant = message.role === "assistant";
   const isCodeBlock = message.content.startsWith("```");
   const isLoading = message.isLoading ?? false;
