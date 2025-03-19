@@ -20,7 +20,9 @@ export function ChatLayout() {
         )} />
         
         <div className="flex flex-col flex-1 min-h-0">
-          <ChatMessages className="flex-1 overflow-auto" />
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ChatMessages className="h-full" />
+          </div>
           <div className="shrink-0 border-t">
             <ChatInput className="p-4 bg-background" />
           </div>
