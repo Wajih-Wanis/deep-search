@@ -71,7 +71,7 @@ def handle_deep_search(user_id, data):
         user = User.find_by_id(user_id)
         model_config = user.get('config', {})
         
-        model_name = model_config.get('model', 'deepseek-r1:8b')
+        model_name = model_config.get('model', 'llama3.2:1b')
         model_params = model_config.get('parameters', {})
         temperature = model_params.get('temperature', 0)
 
