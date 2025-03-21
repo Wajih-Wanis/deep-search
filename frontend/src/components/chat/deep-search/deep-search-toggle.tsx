@@ -1,9 +1,10 @@
 "use client";
 
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useDeepSearchStore } from "./deep-search-service";
 import { useStore } from "@/stores/chat-store";
+import { Search } from "lucide-react";
+import { cn } from "@/components/ui/lib";
 
 export function DeepSearchToggle() {
   const { activeChatId } = useStore();
@@ -12,15 +13,20 @@ export function DeepSearchToggle() {
   if (!activeChatId) return null;
 
   return (
-    <div className="flex items-center gap-2 ml-4">
-      <Switch
-        id="deep-search-mode"
-        checked={isDeepSearchActive}
-        onCheckedChange={toggleDeepSearch}
-      />
-      <Label htmlFor="deep-search-mode" className="text-sm">
-        Deep Search
-      </Label>
-    </div>
+    <Button
+      type="button"
+      variant={isDeepSearchActive ? "default" : "outline"}
+      size="sm"
+      className={cn(
+        "gap-2 transition-colors min-w-[100px]", 
+        isDeepSearchActive 
+          ? "bg-primary hover:bg-primary/90" 
+          : "bg-background hover:bg-muted"
+      )}
+      onClick={()=>toggleDeepSearch()}
+    >
+      <Search className="h-4 w-4" />
+      <span>Deep Search</span>
+    </Button>
   );
 }
