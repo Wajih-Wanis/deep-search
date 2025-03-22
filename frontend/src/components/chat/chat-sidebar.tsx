@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { cn } from "../ui/lib";
 
-export function ChatSidebar({ className }: { className?: string }) {
+export function ChatSidebar({ }: { className?: string }) {
   const { chats, createChat, selectChat, activeChatId } = useStore();
 
   return (
-    <div className={cn("w-64 border-r flex flex-col", className)}>
+    <div className="w-64 border-r flex flex-col">
       <div className="p-4 border-b">
         <Button onClick={createChat} className="w-full">
           <PlusIcon className="mr-2 h-4 w-4" /> New Chat
