@@ -2,8 +2,8 @@ from flask import jsonify
 from app.models.message import Message
 from app.models.chat import Chat
 from app.models.user import User
-from Agent.Agent import DeepSearchAgent
-from Utils.Model import OllamaModel
+from app.AI_Modules.Agent.Agent import DeepSearchAgent
+from app.AI_Modules.Utils.Model import OllamaModel
 from datetime import datetime
 import logging
 
