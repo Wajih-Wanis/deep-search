@@ -6,6 +6,7 @@ from app.AI_Modules.Agent.Agent import DeepSearchAgent
 from app.AI_Modules.Utils.Model import OllamaModel
 from datetime import datetime
 import logging
+from app.AI_Modules.Agent.ChatAgent import ChatAgent
 
 def handle_chat(user_id, data):
     """Handle regular chat interactions"""
@@ -31,12 +32,23 @@ def handle_chat(user_id, data):
         
         try:
             model = OllamaModel._get_model(provider, model_config)
-            response = model._run(message)
         except Exception as e:
             logging.error(f"Model error: {str(e)}")
             model = OllamaModel()
-            response = model._run(message)
         
+        try:
+            history = Message.get_chat_messages(chat_id)
+            if len(history)>3:
+                history=history[:3]
+            print(history)
+        except Exception as e:
+            logging.info(f"Error {e} occured, proceeding without history")
+            history=[]
+        print(history)
+        chat_agent = ChatAgent(model)
+        
+        response = chat_agent._generate_message(user_msg["content"],history)
+                
         ai_msg = Message.create(
             chat_id=chat_id,
             content=response,
