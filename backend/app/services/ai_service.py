@@ -38,13 +38,9 @@ def handle_chat(user_id, data):
         
         try:
             history = Message.get_chat_messages(chat_id)
-            if len(history)>3:
-                history=history[:3]
-            print(history)
         except Exception as e:
             logging.info(f"Error {e} occured, proceeding without history")
             history=[]
-        print(history)
         chat_agent = ChatAgent(model)
         
         response = chat_agent._generate_message(user_msg["content"],history)
