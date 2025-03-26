@@ -1,5 +1,21 @@
 from typing import List, Dict
 import logging
+import os 
+from datetime import datetime
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+log_filename = os.path.join('logs', f"log_{current_time}.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename=log_filename,
+    filemode='w',
+    format='%(asctime)s - %(levelname)s - %(message)s - %(funcName)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 
 class ChatAgent:
     def __init__(self, model):
