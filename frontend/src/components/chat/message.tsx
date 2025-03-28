@@ -4,6 +4,8 @@ import { cn } from "../ui/lib";
 import { Card } from "@/components/ui/card";
 import { Message } from "@/types";
 import { format } from "date-fns";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { BotIcon, UserIcon } from "lucide-react";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -11,7 +13,6 @@ import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 export function MessageBubble({ message }: { message: Message }) {
   
   const isAssistant = message.role === "assistant";
-  const isCodeBlock = message.content.startsWith("```");
   const isLoading = message.isLoading ?? false;
 
   const getValidDate = (dateString?: string | null) => {
@@ -59,7 +60,6 @@ export function MessageBubble({ message }: { message: Message }) {
             : "bg-primary text-primary-foreground rounded-tl-none",
           isLoading && "animate-pulse" 
         )}>
- 
           <div className="text-sm mb-2 opacity-75">
             {formattedTime}
           </div>
@@ -70,18 +70,35 @@ export function MessageBubble({ message }: { message: Message }) {
               <div className="animate-bounce delay-100">.</div>
               <div className="animate-bounce delay-200">.</div>
             </div>
-          ) : isCodeBlock ? (
-            <SyntaxHighlighter 
-              language="typescript"
-              style={atomOneDark}
-              customStyle={{ background: 'transparent' }}
-            >
-              {message.content.replace(/```\w*/g, '')}
-            </SyntaxHighlighter>
           ) : (
-            <div className="whitespace-pre-wrap">{message.content}</div>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ node, inline, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || '');
+                  return !inline && match ? (
+                    <SyntaxHighlighter
+                      style={atomOneDark}
+                      language={match[1]}
+                      PreTag="div"
+                      {...props}
+                    >
+                      {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                }
+              }}
+              className="prose prose-sm dark:prose-invert max-w-none"
+            >
+              {message.content}
+            </ReactMarkdown>
           )}
 
+          {/* Keep sources section unchanged */}
           {message.metadata?.sources && (
             <div className="mt-3 pt-2 border-t text-xs opacity-75">
               Sources:{" "}
@@ -100,7 +117,7 @@ export function MessageBubble({ message }: { message: Message }) {
               ))}
             </div>
           )}
-                  </Card>
+        </Card>
       </div>
     </div>
   );
