@@ -74,6 +74,7 @@ langchain-openai==0.3.7
 langchain-text-splitters==0.3.6
 langgraph==0.2.74
 langgraph-checkpoint==2.0.16
+langgraph-checkpoint-mongodb==0.1.1
 langgraph-sdk==0.1.53
 langsmith==0.3.8
 markdown-it-py==3.0.0
@@ -83,6 +84,7 @@ matplotlib==3.10.1
 matplotlib-inline==0.1.7
 mdurl==0.1.2
 mongomock==4.3.0
+motor==3.7.0
 msgpack==1.1.0
 multidict==6.1.0
 mycdp==1.1.0
